@@ -1,0 +1,21 @@
+{
+  "name": "amp-linux-vm",
+  "version": "1.0.0",
+  "description": "Full Linux VM served via Google AMP CDN font trick — optimized for performance",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "build-disk": "bash scripts/build-disk.sh",
+    "split-chunks": "bash scripts/split-chunks.sh",
+    "cache-warm": "bash scripts/cache-warm.sh",
+    "serve-public": "npx serve public -p 8080",
+    "test": "node --test tests/"
+  },
+  "dependencies": {
+    "itty-router": "^5.0.0"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}

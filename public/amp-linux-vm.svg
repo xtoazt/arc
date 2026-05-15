@@ -1,0 +1,494 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="100%" height="100%"
+     viewBox="0 0 1280 720"
+     preserveAspectRatio="xMidYMid meet">
+
+  <!-- Background -->
+  <rect width="100%" height="100%" fill="#0d1117"/>
+
+  <!-- Terminal UI via foreignObject -->
+  <foreignObject width="100%" height="100%">
+    <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%;height:100%;display:flex;flex-direction:column;color:#e6edf3;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;overflow:hidden;">
+
+      <style>
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        body{margin:0;background:#0d1117}
+        .app{display:flex;flex-direction:column;width:100%;height:100vh}
+        .header{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;background:#161b22;border-bottom:1px solid #30363d;height:40px;flex-shrink:0;user-select:none}
+        .header__brand{display:flex;align-items:center;gap:8px;font-family:'SF Mono','Cascadia Code','Fira Code',monospace;font-size:13px;font-weight:500;color:#8b949e}
+        .header__brand-dot{width:8px;height:8px;border-radius:50%;background:#3fb950;box-shadow:0 0 6px rgba(63,185,80,0.4)}
+        .header__status{font-family:'SF Mono','Cascadia Code','Fira Code',monospace;font-size:12px;color:#6e7681;display:flex;align-items:center;gap:4px}
+        .header__status-indicator{width:6px;height:6px;border-radius:50%;background:#d29922;transition:background 150ms}
+        .header__status-indicator--ready{background:#3fb950;box-shadow:0 0 6px rgba(63,185,80,0.3)}
+        .main{flex:1;display:flex;position:relative;overflow:hidden}
+        .screen{flex:1;display:flex;align-items:center;justify-content:center;background:#000;position:relative}
+        .screen canvas{display:block;image-rendering:pixelated;max-width:100%;max-height:100%;object-fit:contain}
+        .screen__overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);backdrop-filter:blur(4px);transition:opacity 300ms}
+        .screen__overlay--hidden{opacity:0;pointer-events:none}
+        .loading{display:flex;flex-direction:column;align-items:center;gap:24px;padding:32px;max-width:480px;width:100%}
+        .loading__title{font-family:'SF Mono','Cascadia Code','Fira Code',monospace;font-size:16px;font-weight:500;color:#e6edf3;text-align:center}
+        .loading__subtitle{font-family:'SF Mono','Cascadia Code','Fira Code',monospace;font-size:12px;color:#8b949e;text-align:center;line-height:1.4}
+        .progress{width:100%;display:flex;flex-direction:column;gap:8px}
+        .progress__bar{width:100%;height:4px;background:#21262d;border-radius:2px;overflow:hidden}
+        .progress__fill{height:100%;background:#238636;border-radius:2px;transition:width 0.4s ease}
+        .progress__text{display:flex;justify-content:space-between;font-family:'SF Mono','Cascadia Code','Fira Code',monospace;font-size:11px;color:#6e7681}
+        .progress__stage{color:#8b949e;font-family:'SF Mono','Cascadia Code','Fira Code',monospace;font-size:11px;text-align:center}
+        .chunk-list{width:100%;display:flex;flex-direction:column;gap:2px;max-height:200px;overflow-y:auto}
+        .chunk-list__item{display:flex;align-items:center;justify-content:space-between;padding:3px 8px;font-family:'SF Mono','Cascadia Code','Fira Code',monospace;font-size:11px;border-radius:3px;transition:background 150ms}
+        .chunk-list__item:hover{background:#21262d}
+        .chunk-list__name{color:#8b949e;flex:1}
+        .chunk-list__size{color:#6e7681;margin-right:8px;min-width:50px;text-align:right}
+        .chunk-list__status{width:16px;text-align:center;font-size:10px}
+        .chunk-list__status--loading{color:#d29922}
+        .chunk-list__status--done{color:#3fb950}
+        .chunk-list__status--error{color:#f85149}
+        .status-bar{display:flex;align-items:center;justify-content:space-between;padding:3px 16px;background:#161b22;border-top:1px solid #30363d;height:28px;flex-shrink:0;font-family:'SF Mono','Cascadia Code','Fira Code',monospace;font-size:11px;color:#6e7681}
+        .status-bar__left,.status-bar__right{display:flex;align-items:center;gap:16px}
+        .status-bar__item{display:flex;align-items:center;gap:4px}
+        .status-bar__value{color:#8b949e}
+        .error-panel{display:flex;flex-direction:column;align-items:center;gap:16px;padding:32px;text-align:center}
+        .error-panel__icon{font-size:32px;color:#f85149}
+        .error-panel__message{font-family:'SF Mono','Cascadia Code','Fira Code',monospace;font-size:13px;color:#f85149;line-height:1.5;max-width:400px}
+        .error-panel__retry{padding:8px 24px;background:#21262d;border:1px solid #30363d;border-radius:4px;color:#e6edf3;font-family:'SF Mono','Cascadia Code','Fira Code',monospace;font-size:12px;cursor:pointer;transition:background 150ms,border-color 150ms}
+        .error-panel__retry:hover{background:#30363d;border-color:#6e7681}
+        .chunk-list::-webkit-scrollbar{width:4px}
+        .chunk-list::-webkit-scrollbar-track{background:transparent}
+        .chunk-list::-webkit-scrollbar-thumb{background:#30363d;border-radius:2px}
+        .chunk-list::-webkit-scrollbar-thumb:hover{background:#6e7681}
+        .screen canvas:focus{outline:none}
+        .screen canvas:focus-visible{outline:2px solid #58a6ff;outline-offset:-2px}
+        @media(max-width:640px){.loading{padding:16px;max-width:100%}.header{padding:4px 8px;height:32px}.header__brand{font-size:11px}.status-bar{padding:2px 8px;height:24px;font-size:10px}.chunk-list{max-height:120px}}
+      </style>
+
+      <div class="app" id="app">
+        <header class="header">
+          <div class="header__brand">
+            <span class="header__brand-dot"></span>
+            <span>AMP Linux VM</span>
+          </div>
+          <div class="header__status">
+            <span id="status-indicator" class="header__status-indicator"></span>
+            <span id="status-text">Initializing</span>
+          </div>
+        </header>
+
+        <main class="main">
+          <div id="screen" class="screen">
+            <!-- Loading Overlay -->
+            <div id="loading-overlay" class="screen__overlay">
+              <div class="loading">
+                <div class="loading__title">AMP Linux VM</div>
+                <div class="loading__subtitle">
+                  Fetching resources via AMP CDN
+                  <br/>Google Edge Network · 200+ PoPs
+                </div>
+                <div class="progress">
+                  <div class="progress__bar">
+                    <div id="progress-fill" class="progress__fill" style="width:0%"></div>
+                  </div>
+                  <div class="progress__text">
+                    <span id="progress-label">0 / 0 chunks</span>
+                    <span id="progress-percent">0%</span>
+                  </div>
+                  <div id="progress-stage" class="progress__stage">Connecting</div>
+                </div>
+                <div id="chunk-list" class="chunk-list"></div>
+              </div>
+            </div>
+            <!-- Error Overlay -->
+            <div id="error-overlay" class="screen__overlay screen__overlay--hidden">
+              <div class="error-panel">
+                <div class="error-panel__icon">!</div>
+                <div id="error-message" class="error-panel__message"></div>
+                <button id="retry-button" class="error-panel__retry">Retry</button>
+              </div>
+            </div>
+          </div>
+        </main>
+
+        <footer class="status-bar">
+          <div class="status-bar__left">
+            <span class="status-bar__item">RAM: <span id="sb-ram" class="status-bar__value">--</span></span>
+            <span class="status-bar__item">Image: <span id="sb-image" class="status-bar__value">--</span></span>
+            <span class="status-bar__item">Chunks: <span id="sb-chunks" class="status-bar__value">--</span></span>
+          </div>
+          <div class="status-bar__right">
+            <span class="status-bar__item">CDN: <span id="sb-cdn" class="status-bar__value">AMP</span></span>
+            <span class="status-bar__item">Boot: <span id="sb-boot-time" class="status-bar__value">--</span></span>
+          </div>
+        </footer>
+      </div>
+
+    </div>
+  </foreignObject>
+
+  <script type="text/javascript"><![CDATA[
+    // ═══════════════════════════════════════════════════════════════════
+    // AMP Linux VM — Self-contained SVG Terminal
+    // ═══════════════════════════════════════════════════════════════════
+    //
+    // Opens a full Linux terminal in your browser.
+    // Loaded via jsDelivr from GitHub or opened directly.
+    //
+    // Architecture:
+    //   • v86 x86 emulator (WASM) runs on main thread
+    //   • Resources fetched from AMP CDN (Google edge)
+    //   • COW disk overlay via IndexedDB
+    //   • Snapshot save/restore for instant warm boots
+    //   • All code inline — no external deps at SVG level
+    //
+    // ═══════════════════════════════════════════════════════════════════
+
+    (function () { "use strict";
+
+    // ─── Global Config ─────────────────────────────────────────────────
+    var AMP_BASE = "https://vm--amp-linux-vm-rohan-workers-dev.cdn.ampproject.org/r/s/amp-linux-vm.rohan.workers.dev";
+    var ORIGIN_BASE = "https://amp-linux-vm.rohan.workers.dev";
+    var PROXY_PREFIX = "proxy";
+    var FETCH_TIMEOUT = 15000;
+    var MAX_RETRIES = 3;
+    var RETRY_DELAY = 1000;
+    var FONT_HEADER_SIZE = 298;
+    var SECTOR_SIZE = 512;
+    var CHUNK_NAMES = ["v86-wasm","v86-js","seabios","vgabios","bzimage","initrd","disk-0","disk-1","disk-2","disk-3","disk-4","disk-5"];
+
+    var RAM_TIERS = { micro: 67108864, small: 134217728, medium: 268435456, large: 536870912 };
+
+    // ─── Font Header ───────────────────────────────────────────────────
+    var FONT_HEX = "00010000000a0080000300204f532f3269f96f2b0000013400000056636d6170000b00730000018c00000034676c796600000000000000ac000000016865616427594c4f000000d400000036686865610d9f076e0000011000000024686d7478028b00000000010c000000046c6f636100000000000000d0000000046d617870004103c1000000b0000000206e616d6500060000000001c000000006706f7374ffdb005a000001c800000020000000000001000000010354002b0068000c000100000000000000000000000000080004000000000001000000025eb8624511a85f0f3cf5001f080000000000e0fad13900000000e0fad139f7d6fc4c0e5909dc000000080002000000000000028b000000010000076dfe1d00000efef7d6fa510e590001000000000000000000000000000000010001040e019000050000053305990000011e05330599000003d7006602120000020b060303080402020400000001000000000000000000000000506645640040002000200614fe14019a076d01e300000001000000000000000000020000000300000014000300010000001400040020000000040004000100000020ffff00000020ffffffe000010000000000000000000600000003000000000000ffd8005a0000000000000000000000000000000000000000";
+    var _fontBytes = null;
+
+    function getFontHeader() {
+      if (!_fontBytes) {
+        var len = FONT_HEX.length / 2;
+        _fontBytes = new Uint8Array(len);
+        for (var i = 0; i < len; i++) { _fontBytes[i] = parseInt(FONT_HEX.substr(i*2,2), 16); }
+      }
+      return _fontBytes;
+    }
+
+    function stripFontHeader(buffer) {
+      if (buffer.byteLength < FONT_HEADER_SIZE) throw new Error("Buffer too small");
+      return buffer.slice(FONT_HEADER_SIZE);
+    }
+
+    // ─── Utilities ─────────────────────────────────────────────────────
+    function sleep(ms) { return new Promise(function(r){setTimeout(r,ms);}); }
+    function formatBytes(b) { if(b<1024)return b+"B";if(b<1048576)return (b/1024).toFixed(1)+"KB";return (b/1048576).toFixed(1)+"MB"; }
+    function formatDuration(ms) { if(ms<1000)return ms+"ms";return (ms/1000).toFixed(1)+"s"; }
+    function detectRamTier() { var d=navigator.deviceMemory||4; if(d<2)return RAM_TIERS.micro;if(d<4)return RAM_TIERS.small;if(d<8)return RAM_TIERS.medium;return RAM_TIERS.large; }
+
+    function combineSignals(s1,s2) { var c=new AbortController();s1.addEventListener("abort",function(){c.abort(s1.reason);});s2.addEventListener("abort",function(){c.abort(s2.reason);});return c.signal; }
+
+    // ─── Fetch with retry + font stripping ─────────────────────────────
+    async function fetchWithRetry(url, signal) {
+      var lastError;
+      for (var attempt=1;attempt<=MAX_RETRIES;attempt++) {
+        try {
+          var ctrl=new AbortController();
+          var tid=setTimeout(function(){ctrl.abort();},FETCH_TIMEOUT);
+          var cs=signal?combineSignals(signal,ctrl.signal):ctrl.signal;
+          var resp=await fetch(url,{signal:cs,headers:{Accept:"application/octet-stream"}});
+          clearTimeout(tid);
+          if(!resp.ok)throw new Error("HTTP "+resp.status);
+          return stripFontHeader(await resp.arrayBuffer());
+        } catch(e) {
+          lastError=e;
+          if(e.name==="AbortError")throw e;
+          if(attempt<MAX_RETRIES){console.warn("Retry "+attempt+"/"+MAX_RETRIES+": "+url);await sleep(RETRY_DELAY*Math.pow(2,attempt-1));}
+        }
+      }
+      throw lastError||new Error("Failed: "+url);
+    }
+
+    async function fetchChunkWithFallback(name, signal) {
+      try {return await fetchWithRetry(AMP_BASE+"/"+name,signal);}
+      catch(e){console.warn("AMP CDN failed for "+name+": "+e.message);}
+      try {return await fetchWithRetry(ORIGIN_BASE+"/"+name,signal);}
+      catch(e){throw new Error("Failed to load chunk: "+name);}
+    }
+
+    async function fetchAllChunks(names, opts) {
+      opts=opts||{};
+      var results=new Map(),completed=0,total=names.length;
+      function report(n){completed++;if(opts.onProgress)opts.onProgress({name:n,loaded:completed,total:total,percent:Math.round(completed/total*100)});}
+      var ps=names.map(async function(n){
+        var buf=await fetchChunkWithFallback(n,opts.signal);
+        results.set(n,buf);
+        if(opts.onChunkLoaded)opts.onChunkLoaded({name:n,size:buf.byteLength});
+        report(n);
+      });
+      await Promise.all(ps);
+      return results;
+    }
+
+    // ─── Disk Assembler ────────────────────────────────────────────────
+    async function assembleDisk(chunks, order) {
+      if(!order){order=[];chunks.forEach(function(_,k){if(k.indexOf("disk-")===0)order.push(k);});order.sort(function(a,b){return parseInt(a.split("-")[1])-parseInt(b.split("-")[1]);});}
+      if(order.length===0)throw new Error("No disk chunks");
+      var total=0;for(var i=0;i<order.length;i++){total+=chunks.get(order[i]).byteLength;}
+      var out=new Uint8Array(total),off=0;
+      for(var i=0;i<order.length;i++){out.set(new Uint8Array(chunks.get(order[i])),off);off+=chunks.get(order[i]).byteLength;}
+      return out.buffer;
+    }
+
+    async function decompressGzip(buf) {
+      var ds=new DecompressionStream("gzip"),w=ds.writable.getWriter(),r=ds.readable.getReader();
+      w.write(new Uint8Array(buf));w.close();
+      var parts=[],total=0;
+      while(true){var rd=await r.read();if(rd.done)break;parts.push(rd.value);total+=rd.value.byteLength;}
+      var out=new Uint8Array(total),off=0;
+      for(var i=0;i<parts.length;i++){out.set(parts[i],off);off+=parts[i].byteLength;}
+      return out.buffer;
+    }
+
+    async function assembleAndVerify(chunks,opts){opts=opts||{};var a=await assembleDisk(chunks);if(opts.compressed!==false)a=await decompressGzip(a);return{buffer:a,valid:null,hash:null};}
+
+    // ─── COW Disk ──────────────────────────────────────────────────────
+    function COWDisk(base){this.base=base;this.overlay=new Map();this.dirty=new Set();this.db=null;this._timer=null;this._ready=false;}
+    COWDisk.prototype.init=async function(){var self=this;self.db=await _cowOpenDB();var p=await _cowLoadAll(self.db);p.forEach(function(d,k){self.overlay.set(k,d);});self._timer=setInterval(function(){self.flush();},5000);self._ready=true;};
+    COWDisk.prototype.read=function(sector,count){count=count||1;var out=new Uint8Array(count*SECTOR_SIZE);for(var i=0;i<count;i++){var sn=sector+i,off=i*SECTOR_SIZE;if(this.overlay.has(sn))out.set(this.overlay.get(sn),off);else{var bo=sn*SECTOR_SIZE;if(bo+SECTOR_SIZE<=this.base.byteLength)out.set(new Uint8Array(this.base.slice(bo,bo+SECTOR_SIZE)),off);}}return out.buffer;};
+    COWDisk.prototype.write=function(sector,data){var arr=new Uint8Array(data),count=Math.ceil(arr.length/SECTOR_SIZE);for(var i=0;i<count;i++){var sn=sector+i,so=i*SECTOR_SIZE,sd=arr.slice(so,Math.min(so+SECTOR_SIZE,arr.length)),pad=new Uint8Array(SECTOR_SIZE);pad.set(sd);this.overlay.set(sn,pad);this.dirty.add(sn);}if(this.dirty.size>=500)this.flush();};
+    COWDisk.prototype.flush=async function(){if(!this.db||this.dirty.size===0)return;var tf=Array.from(this.dirty),tx=this.db.transaction("sectors","readwrite"),st=tx.objectStore("sectors");for(var i=0;i<tf.length;i++)st.put(this.overlay.get(tf[i]),tf[i]);await new Promise(function(r,rej){tx.oncomplete=r;tx.onerror=function(){rej(tx.error);};});this.dirty.clear();};
+
+    function _cowOpenDB(){return new Promise(function(r,rej){var req=indexedDB.open("amp-linux-vm-cow",1);req.onupgradeneeded=function(e){var db=e.target.result;if(!db.objectStoreNames.contains("sectors"))db.createObjectStore("sectors");};req.onsuccess=function(){r(req.result);};req.onerror=function(){rej(req.error);};});}
+    async function _cowLoadAll(db){return new Promise(function(res,rej){var tx=db.transaction("sectors","readonly"),st=tx.objectStore("sectors"),req=st.getAllKeys(),m=new Map();req.onsuccess=async function(){var ks=req.result;for(var i=0;i<ks.length;i++){var dr=st.get(ks[i]);await new Promise(function(rr){dr.onsuccess=function(){m.set(ks[i],new Uint8Array(dr.result));rr();};});}res(m);};req.onerror=function(){rej(req.error);};});}
+
+    // ─── Snapshot Manager ──────────────────────────────────────────────
+    function _snapOpenDB(){return new Promise(function(r,rej){var req=indexedDB.open("amp-linux-vm-snapshots",1);req.onupgradeneeded=function(e){var db=e.target.result;if(!db.objectStoreNames.contains("snapshots"))db.createObjectStore("snapshots");};req.onsuccess=function(){r(req.result);};req.onerror=function(){rej(req.error);};});}
+    async function saveSnapshot(data){var db=await _snapOpenDB(),d=data instanceof Uint8Array?data:new Uint8Array(data);return new Promise(function(res,rej){var tx=db.transaction("snapshots","readwrite"),st=tx.objectStore("snapshots");st.put(d,"booted-state");tx.oncomplete=function(){db.close();res();};tx.onerror=function(){db.close();rej(tx.error);};});}
+    async function loadSnapshot(){var db=await _snapOpenDB();return new Promise(function(res,rej){var tx=db.transaction("snapshots","readonly"),st=tx.objectStore("snapshots"),req=st.get("booted-state");req.onsuccess=function(){db.close();var r=req.result;res(r?r instanceof Uint8Array?r:new Uint8Array(r):null);};req.onerror=function(){db.close();rej(req.error);};});}
+    async function hasSnapshot(){var db=await _snapOpenDB();return new Promise(function(res,rej){var tx=db.transaction("snapshots","readonly"),st=tx.objectStore("snapshots"),req=st.count("booted-state");req.onsuccess=function(){db.close();res(req.result>0);};req.onerror=function(){db.close();rej(req.error);};});}
+
+    // ─── v86 Loading (eval-based, SVG-compatible) ──────────────────────
+    async function loadV86(jsUrl) {
+      if (window.V86) return;
+      var resp = await fetch(jsUrl);
+      if (!resp.ok) throw new Error("Failed to fetch v86: HTTP " + resp.status);
+      var code = await resp.text();
+      eval(code);
+      if (!window.V86 && typeof V86 !== "undefined") window.V86 = V86;
+      if (!window.V86) throw new Error("v86 failed to initialize");
+    }
+
+    // ─── Key to Scancode ───────────────────────────────────────────────
+    function keyToScancode(kc, shift, ctrl, alt) {
+      if(kc>=65&&kc<=90)return kc-65+0x1e;
+      if(kc>=48&&kc<=57){if(kc===48)return 0x0b;return kc-49+0x02;}
+      if(kc>=112&&kc<=123)return kc-112+0x3b;
+      var m={8:0x0e,9:0x0f,13:0x1c,27:0x01,32:0x39,33:0x49,34:0x51,35:0x4f,36:0x47,37:0x4b,38:0x48,39:0x4d,40:0x50,46:0x53};
+      return m[kc]||0;
+    }
+
+    // ─── VM Boot (main thread) ─────────────────────────────────────────
+    async function bootVM(opts) {
+      opts=opts||{};
+      var screen=opts.screenContainer,onP=opts.onProgress,onB=opts.onBooted,onE=opts.onError,trySnap=opts.useSnapshot!==false;
+
+      try {
+        // Snapshot restore — requires v86 WASM/JS to be loaded first
+        if (trySnap && await hasSnapshot()) {
+          var snap = await loadSnapshot();
+          if (snap) {
+            if(onP)onP({stage:"snapshot",loaded:0,total:1,percent:0});
+            // Need to load v86 before restoring state
+            if (!window.V86) {
+              // Load v86 from first chunk (we need it for restore)
+              var snapChunks = await fetchAllChunks(["v86-wasm","v86-js"],{});
+              await loadV86(URL.createObjectURL(new Blob([snapChunks.get("v86-js")],{type:"text/javascript"})));
+            }
+            // Create v86 with full config for reliable restore
+            var snapChunks2 = await fetchAllChunks(["v86-wasm"],{});
+            var wasmUrl = URL.createObjectURL(new Blob([snapChunks2.get("v86-wasm")],{type:"application/wasm"}));
+            var emu = new window.V86({wasm_path:wasmUrl,memory_size:detectRamTier(),vga_memory_size:8388608,screen_container:screen,autostart:false});
+            await emu.restore_state(snap);
+            emu.run();
+            setupFramebuffer(emu,screen);
+            setupInput(emu,screen);
+            startAutoSnap(emu);
+            if(onP)onP({stage:"snapshot",loaded:1,total:1,percent:100});
+            if(onB)onB({instant:true});
+            return {emulator:emu,cowDisk:null,blobUrls:null};
+          }
+        }
+
+        // Full boot
+        if(onP)onP({stage:"fetching",loaded:0,total:CHUNK_NAMES.length,percent:0});
+        var chunks=await fetchAllChunks(CHUNK_NAMES,{
+          onProgress:function(i){if(onP)onP({stage:"fetching",loaded:i.loaded,total:i.total,percent:i.percent});},
+          onChunkLoaded:function(i){console.debug("Loaded: "+i.name+" ("+formatBytes(i.size)+")");}
+        });
+
+        if(onP)onP({stage:"assembling",loaded:0,total:1,percent:0});
+        var diskR=await assembleAndVerify(chunks,{compressed:true});
+        if(onP)onP({stage:"assembling",loaded:1,total:1,percent:100});
+
+        if(onP)onP({stage:"storage",loaded:0,total:1,percent:0});
+        var cow=new COWDisk(diskR.buffer);await cow.init();
+        if(onP)onP({stage:"storage",loaded:1,total:1,percent:100});
+
+        // Blob URLs
+        var mimes={"v86-wasm":"application/wasm","v86-js":"text/javascript",seabios:"application/octet-stream",vgabios:"application/octet-stream",bzimage:"application/octet-stream",initrd:"application/octet-stream"};
+        var blobs=new Map();
+        chunks.forEach(function(buf,name){var b=new Blob([buf],{type:mimes[name]||"application/octet-stream"});blobs.set(name,URL.createObjectURL(b));});
+
+        if(onP)onP({stage:"loading-v86",loaded:0,total:1,percent:0});
+        await loadV86(blobs.get("v86-js"));
+        if(onP)onP({stage:"booting",loaded:0,total:1,percent:0});
+
+        var ram=detectRamTier();
+        var emulator=new window.V86({wasm_path:blobs.get("v86-wasm"),memory_size:ram,vga_memory_size:8388608,screen_container:screen,bios:{url:blobs.get("seabios")},vga_bios:{url:blobs.get("vgabios")},bzimage:blobs.get("bzimage"),initrd:blobs.get("initrd"),autostart:true,disable_keyboard:true,disable_mouse:true,filesystem:{},network_relay_url:null});
+
+        setupFramebuffer(emulator,screen);
+        setupInput(emulator,screen);
+        startAutoSnap(emulator);
+
+        if(onP)onP({stage:"booting",loaded:1,total:1,percent:100});
+
+        await new Promise(function(resolve,reject){
+          var booted=false;
+          emulator.add_listener("emulator-loaded",function(){
+            setTimeout(function(){
+              if(!booted){booted=true;if(onB)onB({instant:false});resolve();
+                setTimeout(async function(){try{await saveSnapshot(await emulator.save_state());}catch(e){}},5000);
+              }
+            },10000);
+          });
+          emulator.add_listener("error",function(e){
+            console.error("V86 error:",e);
+            if(!booted){ booted=true; if(onE)onE(new Error("Emulator error: "+(e&&e.message||e))); reject(e); }
+          });
+        });
+
+        return {emulator:emulator,cowDisk:cow,blobUrls:blobs};
+      } catch(e) { if(onE)onE(e); throw e; }
+    }
+
+    // ─── Framebuffer Loop ──────────────────────────────────────────────
+    function setupFramebuffer(emu, container) {
+      var canvas=container.querySelector("canvas");
+      if(!canvas){canvas=document.createElement("canvas");container.appendChild(canvas);canvas.style.width="100%";canvas.style.height="100%";canvas.style.imageRendering="pixelated";}
+      var ctx=canvas.getContext("2d",{alpha:false});
+      function frame(){if(!emu)return;try{if(typeof emu.screen_make_screenshot==="function"){var ss=emu.screen_make_screenshot();if(ss){var img=new Image();img.onload=function(){canvas.width=img.width;canvas.height=img.height;ctx.drawImage(img,0,0);};img.src=ss;}}}catch(e){}requestAnimationFrame(frame);}
+      requestAnimationFrame(frame);
+    }
+
+    // ─── Input Forwarding ──────────────────────────────────────────────
+    function setupInput(emu, el) {
+      el.tabIndex=0;el.focus();
+      el.addEventListener("keydown",function(e){e.preventDefault();if(!emu)return;var sc=keyToScancode(e.keyCode,e.shiftKey,e.ctrlKey,e.altKey);if(sc&&typeof emu.keyboard_send_scancodes==="function")emu.keyboard_send_scancodes(sc);});
+      el.addEventListener("mousemove",function(e){if(!emu||typeof emu.mouse_send!=="function")return;var r=el.getBoundingClientRect();emu.mouse_send(Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)),Math.max(0,Math.min(1,(e.clientY-r.top)/r.height)),0);});
+      el.addEventListener("mousedown",function(e){if(!emu||typeof emu.mouse_send!=="function")return;var r=el.getBoundingClientRect();emu.mouse_send(Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)),Math.max(0,Math.min(1,(e.clientY-r.top)/r.height)),1<<(e.button||0));});
+      el.addEventListener("mouseup",function(e){if(!emu||typeof emu.mouse_send!=="function")return;var r=el.getBoundingClientRect();emu.mouse_send(Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)),Math.max(0,Math.min(1,(e.clientY-r.top)/r.height)),0);});
+    }
+
+    // ─── Auto-Snapshot ─────────────────────────────────────────────────
+    function startAutoSnap(emu){setInterval(async function(){if(!emu)return;try{if(typeof emu.save_state==="function"){var s=await emu.save_state();await saveSnapshot(s);}}catch(e){console.warn("Auto-snapshot:",e.message);}},60000);}
+
+    // ─── Bootstrapping ─────────────────────────────────────────────────
+    //
+    // SVG document: the UI is inside <foreignObject>, which creates
+    // HTML elements in the DOM tree but in a different namespace.
+    // In XML DOM, getElementById works across namespaces.
+    // ////
+
+    function $(id){return document.getElementById(id);}
+
+    // Late init — wait for DOM to be parsed (SVG scripts run during parse)
+    function init() {
+      var screenEl=$("screen"),loadingOverlay=$("loading-overlay"),errorOverlay=$("error-overlay"),
+          errorMsg=$("error-message"),retryBtn=$("retry-button"),progressFill=$("progress-fill"),
+          progressLabel=$("progress-label"),progressPercent=$("progress-percent"),progressStage=$("progress-stage"),
+          chunkList=$("chunk-list"),statusInd=$("status-indicator"),statusTxt=$("status-text"),
+          sbRam=$("sb-ram"),sbChunks=$("sb-chunks"),sbBoot=$("sb-boot-time"),sbCdn=$("sb-cdn");
+
+      if (!screenEl) { setTimeout(init, 50); return; } // DOM not ready
+
+      var bootStart=0, chunkStatuses=new Map(), currentEmu=null;
+
+      function setStatus(t,ready){statusTxt.textContent=t;statusInd.className=ready?"header__status-indicator header__status-indicator--ready":"header__status-indicator";}
+
+      function buildChunkList(names){
+        chunkList.innerHTML="";
+        names.forEach(function(n){
+          chunkStatuses.set(n,"loading");
+          var it=document.createElement("div");it.className="chunk-list__item";it.id="chunk-"+n;
+          it.innerHTML='<span class="chunk-list__name">'+n+'</span><span class="chunk-list__size">--</span><span class="chunk-list__status chunk-list__status--loading">&#9675;</span>';
+          chunkList.appendChild(it);
+        });
+      }
+
+      function updateChunk(name,status,size){
+        chunkStatuses.set(name,status);
+        var it=$("chunk-"+name);if(!it)return;
+        var se=it.querySelector(".chunk-list__status"),ze=it.querySelector(".chunk-list__size");
+        if(size!=null)ze.textContent=formatBytes(size);
+        if(status==="done"){se.className="chunk-list__status chunk-list__status--done";se.textContent="\u25CF";}
+        else if(status==="error"){se.className="chunk-list__status chunk-list__status--error";se.textContent="\u2715";}
+        else{se.className="chunk-list__status chunk-list__status--loading";se.textContent="\u25CB";}
+      }
+
+      function onProgress(info){
+        progressStage.textContent=info.stage.charAt(0).toUpperCase()+info.stage.slice(1);
+        progressFill.style.width=info.percent+"%";
+        progressLabel.textContent=info.loaded+" / "+info.total;
+        progressPercent.textContent=info.percent+"%";
+      }
+
+      function onChunkLoaded(info){updateChunk(info.name,"done",info.size);}
+
+      function onBooted(info){
+        var elapsed=Date.now()-bootStart;
+        sbBoot.textContent=formatDuration(elapsed);
+        setStatus(info.instant?"Running (instant)":"Running",true);
+        loadingOverlay.classList.add("screen__overlay--hidden");
+        sbRam.textContent=formatBytes(detectRamTier());
+        sbImage.textContent=info.instant?"snapshot":"bzImage+initrd";
+      }
+
+      function onError(err){
+        console.error("Boot error:",err);
+        setStatus("Error");
+        errorMsg.textContent=err.message||"Unknown error";
+        loadingOverlay.classList.add("screen__overlay--hidden");
+        errorOverlay.classList.remove("screen__overlay--hidden");
+      }
+
+      async function startBoot(){
+        // Clean up previous emulator before retry
+        if (currentEmu) {
+          try { if (typeof currentEmu.destroy==="function") currentEmu.destroy(); } catch(e){}
+          currentEmu=null;
+        }
+        bootStart=Date.now();setStatus("Loading");
+        loadingOverlay.classList.remove("screen__overlay--hidden");
+        errorOverlay.classList.add("screen__overlay--hidden");
+        buildChunkList(CHUNK_NAMES);
+        sbChunks.textContent=String(CHUNK_NAMES.length);
+        sbCdn.textContent="AMP";
+        sbRam.textContent=formatBytes(detectRamTier());
+        sbImage.textContent="--";
+
+        try {
+          var result = await bootVM({screenContainer:screenEl,onProgress:onProgress,onBooted:onBooted,onError:onError,useSnapshot:true});
+          currentEmu = result.emulator;
+        } catch(e){onError(e);}
+      }
+
+      retryBtn.addEventListener("click",startBoot);
+      sbRam.textContent=formatBytes(detectRamTier());
+      startBoot();
+    }
+
+    // Wait for DOM
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", init);
+    } else {
+      init();
+    }
+
+    })();
+  ]]></script>
+
+</svg>

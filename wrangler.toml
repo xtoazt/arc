@@ -1,0 +1,37 @@
+# Cloudflare Worker for AMP Linux VM
+name = "amp-linux-vm"
+main = "worker/src/index.js"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Routes
+routes = [
+  { pattern = "vm.*.workers.dev/*", zone_name = "your-zone" }
+]
+
+[env.production]
+# Production: serve font-prepended chunks with long cache TTL
+[vars]
+FONT_HEADER_SIZE = "298"
+CHUNK_SIZE_MB = "5"
+CACHE_MAX_AGE = "2592000"  # 30 days
+AMP_PUBLISHER_DOMAIN = "vm.your-org.workers.dev"
+
+[[kv_namespaces]]
+binding = "VM_CHUNKS"
+id = "your-kv-namespace-id"
+preview_id = "your-preview-kv-id"
+
+[[r2_buckets]]
+binding = "VM_ASSETS"
+bucket_name = "amp-linux-vm-assets"
+preview_bucket_name = "amp-linux-vm-assets-preview"
+
+# Durable Objects for persistent VM state (COW overlay)
+[[durable_objects.bindings]]
+name = "VM_STATE"
+class_name = "VMState"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["VMState"]

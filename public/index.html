@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AMP Linux VM</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>◈</text></svg>">
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header__brand">
+        <span class="header__brand-dot"></span>
+        <span>AMP Linux VM</span>
+      </div>
+      <div class="header__status">
+        <span id="status-indicator" class="header__status-indicator"></span>
+        <span id="status-text">Initializing</span>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+      <!-- Screen Container -->
+      <div id="screen" class="screen">
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="screen__overlay">
+          <div class="loading">
+            <div class="loading__title">Loading VM</div>
+            <div class="loading__subtitle">
+              Fetching resources via AMP CDN
+              <br>Google Edge Network · 200+ PoPs
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="progress">
+              <div class="progress__bar">
+                <div id="progress-fill" class="progress__fill" style="width: 0%"></div>
+              </div>
+              <div class="progress__text">
+                <span id="progress-label">0 / 0 chunks</span>
+                <span id="progress-percent">0%</span>
+              </div>
+              <div id="progress-stage" class="progress__stage">Connecting</div>
+            </div>
+
+            <!-- Chunk List -->
+            <div id="chunk-list" class="chunk-list"></div>
+          </div>
+        </div>
+
+        <!-- Error Overlay (hidden by default) -->
+        <div id="error-overlay" class="screen__overlay screen__overlay--hidden">
+          <div class="error-panel">
+            <div class="error-panel__icon">!</div>
+            <div id="error-message" class="error-panel__message"></div>
+            <button id="retry-button" class="error-panel__retry">Retry</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Status Bar -->
+    <footer class="status-bar">
+      <div class="status-bar__left">
+        <span class="status-bar__item">
+          RAM: <span id="sb-ram" class="status-bar__value">--</span>
+        </span>
+        <span class="status-bar__item">
+          Image: <span id="sb-image" class="status-bar__value">--</span>
+        </span>
+        <span class="status-bar__item">
+          Chunks: <span id="sb-chunks" class="status-bar__value">--</span>
+        </span>
+      </div>
+      <div class="status-bar__right">
+        <span class="status-bar__item">
+          CDN: <span id="sb-cdn" class="status-bar__value">AMP</span>
+        </span>
+        <span class="status-bar__item">
+          Boot: <span id="sb-boot-time" class="status-bar__value">--</span>
+        </span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Bootstrap module -->
+  <script type="module">
+    import { bootVM, detectRamTier } from './js/vm-boot.js';
+
+    // ── DOM Elements ──────────────────────────────────────────────────
+    const screenEl = document.getElementById('screen');
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const errorOverlay = document.getElementById('error-overlay');
+    const errorMessage = document.getElementById('error-message');
+    const retryButton = document.getElementById('retry-button');
+    const progressFill = document.getElementById('progress-fill');
+    const progressLabel = document.getElementById('progress-label');
+    const progressPercent = document.getElementById('progress-percent');
+    const progressStage = document.getElementById('progress-stage');
+    const chunkList = document.getElementById('chunk-list');
+    const statusIndicator = document.getElementById('status-indicator');
+    const statusText = document.getElementById('status-text');
+
+    // Status bar elements
+    const sbRam = document.getElementById('sb-ram');
+    const sbImage = document.getElementById('sb-image');
+    const sbChunks = document.getElementById('sb-chunks');
+    const sbCdn = document.getElementById('sb-cdn');
+    const sbBootTime = document.getElementById('sb-boot-time');
+
+    // ── State ─────────────────────────────────────────────────────────
+    let bootStartTime = 0;
+    const chunkStatuses = new Map(); // name → 'loading' | 'done' | 'error'
+
+    // ── Status Helpers ────────────────────────────────────────────────
+
+    function setStatus(text, ready = false) {
+      statusText.textContent = text;
+      statusIndicator.className = ready
+        ? 'header__status-indicator header__status-indicator--ready'
+        : 'header__status-indicator';
+    }
+
+    function formatBytes(bytes) {
+      if (bytes < 1024) return `${bytes}B`;
+      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
+      return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+    }
+
+    function formatDuration(ms) {
+      if (ms < 1000) return `${ms}ms`;
+      return `${(ms / 1000).toFixed(1)}s`;
+    }
+
+    // ── Chunk List UI ─────────────────────────────────────────────────
+
+    function buildChunkList(chunkNames) {
+      chunkList.innerHTML = '';
+      for (const name of chunkNames) {
+        chunkStatuses.set(name, 'loading');
+        const item = document.createElement('div');
+        item.className = 'chunk-list__item';
+        item.id = `chunk-${name}`;
+        item.innerHTML = `
+          <span class="chunk-list__name">${name}</span>
+          <span class="chunk-list__size">--</span>
+          <span class="chunk-list__status chunk-list__status--loading">○</span>
+        `;
+        chunkList.appendChild(item);
+      }
+    }
+
+    function updateChunkStatus(name, status, size = null) {
+      chunkStatuses.set(name, status);
+      const item = document.getElementById(`chunk-${name}`);
+      if (!item) return;
+
+      const statusEl = item.querySelector('.chunk-list__status');
+      const sizeEl = item.querySelector('.chunk-list__size');
+
+      if (size !== null) {
+        sizeEl.textContent = formatBytes(size);
+      }
+
+      switch (status) {
+        case 'done':
+          statusEl.className = 'chunk-list__status chunk-list__status--done';
+          statusEl.textContent = '●';
+          break;
+        case 'error':
+          statusEl.className = 'chunk-list__status chunk-list__status--error';
+          statusEl.textContent = '✕';
+          break;
+        default:
+          statusEl.className = 'chunk-list__status chunk-list__status--loading';
+          statusEl.textContent = '○';
+      }
+    }
+
+    // ── Progress Handler ──────────────────────────────────────────────
+
+    function onProgress(info) {
+      const { stage, loaded, total, percent, name } = info;
+
+      progressStage.textContent = stage.charAt(0).toUpperCase() + stage.slice(1);
+      progressFill.style.width = `${percent}%`;
+      progressLabel.textContent = `${loaded} / ${total}`;
+      progressPercent.textContent = `${percent}%`;
+    }
+
+    function onChunkLoaded(info) {
+      updateChunkStatus(info.name, 'done', info.size);
+    }
+
+    function onBooted(info) {
+      const elapsed = Date.now() - bootStartTime;
+      sbBootTime.textContent = formatDuration(elapsed);
+
+      if (info.instant) {
+        setStatus('Running (instant)', true);
+      } else {
+        setStatus('Running', true);
+      }
+
+      loadingOverlay.classList.add('screen__overlay--hidden');
+      sbCdn.textContent = 'AMP';
+      sbRam.textContent = formatBytes(detectRamTier());
+    }
+
+    function onError(err) {
+      console.error('Boot error:', err);
+      setStatus('Error');
+      errorMessage.textContent = err.message || 'Unknown error';
+      loadingOverlay.classList.add('screen__overlay--hidden');
+      errorOverlay.classList.remove('screen__overlay--hidden');
+    }
+
+    // ── Boot ──────────────────────────────────────────────────────────
+
+    async function startBoot() {
+      bootStartTime = Date.now();
+      setStatus('Loading');
+      loadingOverlay.classList.remove('screen__overlay--hidden');
+      errorOverlay.classList.add('screen__overlay--hidden');
+
+      const CHUNK_NAMES = [
+        'v86-wasm', 'v86-js', 'seabios', 'vgabios',
+        'bzimage', 'initrd',
+        'disk-0', 'disk-1', 'disk-2', 'disk-3', 'disk-4', 'disk-5',
+      ];
+
+      buildChunkList(CHUNK_NAMES);
+      sbChunks.textContent = String(CHUNK_NAMES.length);
+      sbCdn.textContent = 'AMP';
+
+      try {
+        const result = await bootVM({
+          screenContainer: screenEl,
+          onProgress,
+          onBooted,
+          onError,
+          useSnapshot: true,
+        });
+
+        // Register periodic snapshot saves
+        if (result.emulator) {
+          result.emulator.addEventListener('message', (e) => {
+            if (e.data.type === 'snapshot-ready') {
+              console.debug('Auto-snapshot saved');
+            }
+          });
+        }
+      } catch (err) {
+        onError(err);
+      }
+    }
+
+    // ── Retry ─────────────────────────────────────────────────────────
+
+    retryButton.addEventListener('click', () => {
+      startBoot();
+    });
+
+    // ── Initialize ────────────────────────────────────────────────────
+
+    sbRam.textContent = formatBytes(detectRamTier());
+    startBoot();
+  </script>
+</body>
+</html>

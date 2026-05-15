@@ -1,0 +1,426 @@
+/**
+ * AMP Linux VM — Professional Terminal UI
+ *
+ * Design principles:
+ *  - Clean, minimal aesthetic (terminal-inspired, not gaming)
+ *  - High contrast for readability
+ *  - Smooth animations for progress feedback
+ *  - Responsive layout
+ */
+
+/* ─── Reset & Base ──────────────────────────────────────────────────────── */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* Color palette — professional terminal */
+  --bg-primary: #0d1117;
+  --bg-secondary: #161b22;
+  --bg-elevated: #21262d;
+  --border-default: #30363d;
+  --border-muted: #21262d;
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --text-muted: #6e7681;
+  --accent-blue: #58a6ff;
+  --accent-green: #3fb950;
+  --accent-yellow: #d29922;
+  --accent-red: #f85149;
+  --accent-purple: #a371f7;
+  --progress-fill: #238636;
+  --progress-bg: #21262d;
+
+  /* Typography */
+  --font-mono: 'SF Mono', 'Cascadia Code', 'Fira Code', 'JetBrains Mono',
+    'IBM Plex Mono', 'Consolas', 'Courier New', monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica,
+    Arial, sans-serif;
+
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-normal: 300ms ease;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── App Container ─────────────────────────────────────────────────────── */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+/* ─── Header ────────────────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-default);
+  height: 40px;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.header__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.header__brand-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-green);
+  box-shadow: 0 0 6px rgba(63, 185, 80, 0.4);
+}
+
+.header__status {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.header__status-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-yellow);
+  transition: background var(--transition-fast);
+}
+
+.header__status-indicator--ready {
+  background: var(--accent-green);
+  box-shadow: 0 0 6px rgba(63, 185, 80, 0.3);
+}
+
+/* ─── Main Content ──────────────────────────────────────────────────────── */
+
+.main {
+  flex: 1;
+  display: flex;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ─── Screen Container (VM Display) ─────────────────────────────────────── */
+
+.screen {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  position: relative;
+}
+
+.screen canvas {
+  display: block;
+  image-rendering: pixelated;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.screen__overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(4px);
+  transition: opacity var(--transition-normal);
+}
+
+.screen__overlay--hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ─── Loading Panel ─────────────────────────────────────────────────────── */
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-lg);
+  padding: var(--space-xl);
+  max-width: 480px;
+  width: 100%;
+}
+
+.loading__title {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.loading__subtitle {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* ─── Progress Bar ──────────────────────────────────────────────────────── */
+
+.progress {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.progress__bar {
+  width: 100%;
+  height: 4px;
+  background: var(--progress-bg);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress__fill {
+  height: 100%;
+  background: var(--progress-fill);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+  min-width: 0;
+}
+
+.progress__text {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.progress__stage {
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-align: center;
+}
+
+/* ─── Chunk List ────────────────────────────────────────────────────────── */
+
+.chunk-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.chunk-list__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px var(--space-sm);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  border-radius: 3px;
+  transition: background var(--transition-fast);
+}
+
+.chunk-list__item:hover {
+  background: var(--bg-elevated);
+}
+
+.chunk-list__name {
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+.chunk-list__size {
+  color: var(--text-muted);
+  margin-right: var(--space-sm);
+  min-width: 50px;
+  text-align: right;
+}
+
+.chunk-list__status {
+  width: 16px;
+  text-align: center;
+  font-size: 10px;
+}
+
+.chunk-list__status--loading {
+  color: var(--accent-yellow);
+}
+
+.chunk-list__status--done {
+  color: var(--accent-green);
+}
+
+.chunk-list__status--error {
+  color: var(--accent-red);
+}
+
+/* ─── Status Bar ────────────────────────────────────────────────────────── */
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px var(--space-md);
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-default);
+  height: 28px;
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.status-bar__left, .status-bar__right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.status-bar__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.status-bar__value {
+  color: var(--text-secondary);
+}
+
+/* ─── Error State ───────────────────────────────────────────────────────── */
+
+.error-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-xl);
+  text-align: center;
+}
+
+.error-panel__icon {
+  font-size: 32px;
+  color: var(--accent-red);
+}
+
+.error-panel__message {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--accent-red);
+  line-height: 1.5;
+  max-width: 400px;
+}
+
+.error-panel__retry {
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.error-panel__retry:hover {
+  background: var(--border-default);
+  border-color: var(--text-muted);
+}
+
+/* ─── Responsive ────────────────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .loading {
+    padding: var(--space-md);
+    max-width: 100%;
+  }
+
+  .header {
+    padding: var(--space-xs) var(--space-sm);
+    height: 32px;
+  }
+
+  .header__brand {
+    font-size: 11px;
+  }
+
+  .status-bar {
+    padding: 2px var(--space-sm);
+    height: 24px;
+    font-size: 10px;
+  }
+
+  .chunk-list {
+    max-height: 120px;
+  }
+}
+
+/* ─── Focus Styles ──────────────────────────────────────────────────────── */
+
+.screen canvas:focus {
+  outline: none;
+}
+
+.screen canvas:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: -2px;
+}
+
+/* ─── Scrollbar ─────────────────────────────────────────────────────────── */
+
+.chunk-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.chunk-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chunk-list::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 2px;
+}
+
+.chunk-list::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
