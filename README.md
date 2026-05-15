@@ -7,7 +7,7 @@
 ### Option 1: Open the SVG directly (jsDelivr/CDN)
 
 ```
-https://cdn.jsdelivr.net/gh/YOUR_GITHUB_USERNAME/arc@main/public/amp-linux-vm.svg
+https://cdn.jsdelivr.net/gh/xtoazt/arc@main/public/amp-linux-vm.svg
 ```
 
 Just open that URL in any browser. A Linux terminal boots in ~15-30 seconds (cold) or ~1-3 seconds (warm, after first visit).
@@ -15,7 +15,7 @@ Just open that URL in any browser. A Linux terminal boots in ~15-30 seconds (col
 ### Option 2: Open locally
 
 ```bash
-git clone https://github.com/YOUR_GITHUB_USERNAME/arc.git
+git clone https://github.com/xtoazt/arc.git
 cd arc
 open public/amp-linux-vm.svg
 ```
@@ -100,20 +100,43 @@ arc/
 ### Cloudflare Worker
 
 ```bash
-# Install wrangler
+# 1. Install dependencies
 npm install
 
-# Configure wrangler.toml with your account details
-# Set KV namespace IDs, R2 bucket names
+# 2. Login to Cloudflare
+npx wrangler login
 
-# Deploy
+# 3. Create KV namespace for VM chunks
+npx wrangler kv:namespace create VM_CHUNKS
+npx wrangler kv:namespace create VM_CHUNKS --preview
+
+# 4. Create R2 bucket for VM assets
+npx wrangler r2 bucket create amp-linux-vm-assets
+
+# 5. Update wrangler.toml with the KV namespace IDs and R2 bucket name
+#    (the output from steps 3-4 will show the IDs)
+
+# 6. Upload your disk chunks to KV or R2
+#    (use wrangler kv:bulk put or r2 object put)
+
+# 7. Deploy
 npx wrangler deploy
+
+# 8. Get your worker URL
+npx wrangler whoami
+# Worker will be at: <worker-name>.<your-subdomain>.workers.dev
 ```
 
+After deployment, update `AMP_BASE` and `ORIGIN_BASE` in the SVG/js files and re-push to GitHub.
+
 After deployment, update `AMP_BASE` and `ORIGIN_BASE` in:
-- `public/amp-linux-vm.svg` (inside the `<script>` tag)
-- `public/js/amp-vm-bundle.js`
-- `public/js/amp-loader.js`
+- `public/amp-linux-vm.svg` (line ~230, inside `<script>` tag)
+- `public/js/amp-vm-bundle.js` (top of file)
+- `public/js/amp-loader.js` (top of file)
+
+**AMP_BASE** format: `https://<publisher>--<worker-name>-<org>-workers-dev.cdn.ampproject.org/r/s/<worker-name>.<org>.workers.dev`
+
+**ORIGIN_BASE** format: `https://<worker-name>.<org>.workers.dev`
 
 ### GitHub Pages / jsDelivr
 
