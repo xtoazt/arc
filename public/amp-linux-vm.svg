@@ -143,8 +143,8 @@
     (function () { "use strict";
 
     // ─── Global Config ─────────────────────────────────────────────────
-    var AMP_BASE = "https://vm--amp-linux-vm-rohan-workers-dev.cdn.ampproject.org/r/s/amp-linux-vm.rohan.workers.dev";
-    var ORIGIN_BASE = "https://amp-linux-vm.rohan.workers.dev";
+    var AMP_BASE = "https://amp-linux-vm-challengerdeep-workers-dev.cdn.ampproject.org/r/s/amp-linux-vm.challengerdeep.workers.dev";
+    var ORIGIN_BASE = "https://amp-linux-vm.challengerdeep.workers.dev";
     var PROXY_PREFIX = "proxy";
     var FETCH_TIMEOUT = 15000;
     var MAX_RETRIES = 3;

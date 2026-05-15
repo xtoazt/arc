@@ -30,8 +30,8 @@ CACHE_MAX_AGE = "2592000"  # 30 days
 # Copy the 'id' value below:
 [[kv_namespaces]]
 binding = "VM_CHUNKS"
-id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
-preview_id = "REPLACE_WITH_YOUR_PREVIEW_KV_ID"
+id = "66b144f39a124b48a062907a93c02039"
+preview_id = "66b144f39a124b48a062907a93c02039"
 
 # ── R2 Bucket (OPTIONAL) — cheaper storage for large assets ──────
 # Run: wrangler r2 bucket create amp-linux-vm-assets

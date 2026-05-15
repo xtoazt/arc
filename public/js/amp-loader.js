@@ -21,10 +21,9 @@ import { FONT_HEADER_SIZE } from './font-header.js';
 
 // AMP CDN URL pattern (primary — all access goes through Google's edge)
 // Format: https://<publisher>--<worker>-<org>-workers-dev.cdn.ampproject.org/r/s/<worker>.<org>.workers.dev/<path>
-const AMP_BASE = 'https://vm--amp-linux-vm-your-org-workers-dev.cdn.ampproject.org/r/s/amp-linux-vm.your-org.workers.dev';
+const AMP_BASE = 'https://amp-linux-vm-challengerdeep-workers-dev.cdn.ampproject.org/r/s/amp-linux-vm.challengerdeep.workers.dev';
 
-// Direct origin URL (fallback only — used when AMP CDN is unreachable)
-const ORIGIN_BASE = 'https://amp-linux-vm.your-org.workers.dev';
+const ORIGIN_BASE = 'https://amp-linux-vm.challengerdeep.workers.dev';
 
 // Proxy prefix for external URL tunneling through AMP CDN
 const PROXY_PREFIX = 'proxy';

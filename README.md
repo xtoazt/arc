@@ -136,7 +136,7 @@ After deployment, update `AMP_BASE` and `ORIGIN_BASE` in:
 
 **AMP_BASE** format: `https://<publisher>--<worker-name>-<org>-workers-dev.cdn.ampproject.org/r/s/<worker-name>.<org>.workers.dev`
 
-**ORIGIN_BASE** format: `https://<worker-name>.<org>.workers.dev`
+**Worker URL:** `https://amp-linux-vm.challengerdeep.workers.dev`
 
 ### GitHub Pages / jsDelivr
 

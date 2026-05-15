@@ -77,10 +77,9 @@
   // MODULE 2: AMP CDN Loader
   // ═══════════════════════════════════════════════════════════════════════
 
-  // Configuration
-  const AMP_BASE =
-    "https://vm--amp-linux-vm-rohan-workers-dev.cdn.ampproject.org/r/s/amp-linux-vm.rohan.workers.dev";
-  const ORIGIN_BASE = "https://amp-linux-vm.rohan.workers.dev";
+  // Configurationconst AMP_BASE =
+    "https://amp-linux-vm-challengerdeep-workers-dev.cdn.ampproject.org/r/s/amp-linux-vm.challengerdeep.workers.dev";
+const ORIGIN_BASE = "https://amp-linux-vm.challengerdeep.workers.dev";
   const PROXY_PREFIX = "proxy";
   const FETCH_TIMEOUT = 15000;
   const MAX_RETRIES = 3;
